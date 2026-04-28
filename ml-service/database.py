@@ -84,11 +84,33 @@ try:
 
 except OperationalError as e:
     logger.error(f"[DB ERROR] Operational Error: {e}")
-    logger.warning("[WARNING] Could not connect to PostgreSQL. Running in Memory-Only Mode.")
-    DB_AVAILABLE = False
+    logger.warning("[WARNING] Could not connect to PostgreSQL. Using SQLite in-memory fallback.")
+    
+    # Fallback to SQLite in-memory database
+    try:
+        engine = create_engine('sqlite:///:memory:')
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        # Create tables in memory
+        Base.metadata.create_all(bind=engine)
+        DB_AVAILABLE = True
+        logger.info("[OK] SQLite in-memory database initialized.")
+    except Exception as sqlite_error:
+        logger.error(f"[DB ERROR] Failed to initialize SQLite: {sqlite_error}")
+        DB_AVAILABLE = False
 except Exception as e:
     logger.error(f"[DB ERROR] Unexpected Error: {e}")
-    DB_AVAILABLE = False
+    logger.warning("[WARNING] Using SQLite in-memory fallback.")
+    
+    # Fallback to SQLite in-memory database
+    try:
+        engine = create_engine('sqlite:///:memory:')
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+        DB_AVAILABLE = True
+        logger.info("[OK] SQLite in-memory database initialized.")
+    except Exception as sqlite_error:
+        logger.error(f"[DB ERROR] Failed to initialize SQLite: {sqlite_error}")
+        DB_AVAILABLE = False
 
 def get_db():
     """Return an open database session, or None if DB is unavailable."""

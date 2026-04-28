@@ -17,7 +17,16 @@ from database import get_db, PredictionRecord, User
 # --- App Setup ---
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), '..', 'frontend')
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
-CORS(app)
+
+# Configure CORS for frontend communication
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
 # --- Load Model Artifacts ---
 MODEL_DIR = os.path.join(os.path.dirname(__file__), 'model_artifacts')
@@ -506,4 +515,4 @@ if __name__ == '__main__':
     print("  Loan Default Prediction API")
     print("  http://localhost:5000")
     print("=" * 60 + "\n")
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, use_reloader=False)
