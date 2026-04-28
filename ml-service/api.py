@@ -18,10 +18,23 @@ from database import get_db, PredictionRecord, User
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), '..', 'frontend')
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 
+def get_cors_origins():
+    configured = os.getenv('CORS_ORIGINS') or os.getenv('FRONTEND_URL') or ''
+    origins = [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:3000',
+        'https://groundzero-tawny.vercel.app',
+    ]
+    origins.extend(origin.strip().rstrip('/') for origin in configured.split(',') if origin.strip())
+    return sorted(set(origins))
+
+
 # Configure CORS for frontend communication
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
+        "origins": get_cors_origins(),
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True

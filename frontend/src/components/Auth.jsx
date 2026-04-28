@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiUrl } from '../api';
 
 export default function Auth({ onLogin, theme, toggleTheme }) {
   const [role, setRole] = useState('borrower');
@@ -48,7 +49,7 @@ export default function Auth({ onLogin, theme, toggleTheme }) {
 
       setLoading(true);
       try {
-        const res = await fetch('http://localhost:5000/api/signup', {
+        const res = await fetch(apiUrl('/api/signup'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -71,7 +72,7 @@ export default function Auth({ onLogin, theme, toggleTheme }) {
     } else {
       setLoading(true);
       try {
-        const res = await fetch('http://localhost:5000/api/login', {
+        const res = await fetch(apiUrl('/api/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: form.email, password: form.password }),

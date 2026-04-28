@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import ArthaAI from './ArthaAI';
 import { calcRisk, buildSched, fmt, fmtK } from '../model';
+import { apiUrl } from '../api';
 
 export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
   const [page, setPage] = useState('bpg-apply');
@@ -34,7 +35,7 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
   const fetchMyApps = async () => {
     if (!user?.email) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/my-applications?email=${user.email}`);
+      const res = await fetch(apiUrl(`/api/my-applications?email=${encodeURIComponent(user.email)}`));
       if (res.ok) {
         const data = await res.json();
         setMyApps(data);
@@ -151,7 +152,7 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
     };
 
     try {
-      const res = await fetch('http://localhost:5000/api/predict', {
+      const res = await fetch(apiUrl('/api/predict'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

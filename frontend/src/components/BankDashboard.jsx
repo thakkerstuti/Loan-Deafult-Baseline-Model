@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import ArthaAI from './ArthaAI';
 import { calcRisk, buildSched, fmt, fmtK } from '../model';
+import { apiUrl } from '../api';
 import Chart from 'chart.js/auto';
 
 export default function BankDashboard({ user, onLogout, theme, toggleTheme }) {
@@ -25,7 +26,7 @@ export default function BankDashboard({ user, onLogout, theme, toggleTheme }) {
   const tog = (k, v) => setFlags(prev => ({ ...prev, [k]: v }));
 
   const fetchApps = () => {
-    fetch('http://localhost:5000/api/applications')
+    fetch(apiUrl('/api/applications'))
       .then(r => r.json())
       .then(data => setApps(Array.isArray(data) ? data : []))
       .catch(e => console.error("Error fetching apps:", e));
@@ -94,7 +95,7 @@ export default function BankDashboard({ user, onLogout, theme, toggleTheme }) {
     };
 
     try {
-      const res = await fetch('http://localhost:5000/api/predict', {
+      const res = await fetch(apiUrl('/api/predict'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
