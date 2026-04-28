@@ -331,42 +331,48 @@ def predict():
                     existing.existing_bank = str(data.get('ExistingBank', ''))
                     existing.existing_rate = float(data.get('ExistingRate', 0))
                     existing.existing_purpose = str(data.get('ExistingPurpose', ''))
-                    existing.job_changes = int(data.get('JobChanges', 0))
+                    # Set job_changes only if attribute exists
+                    if hasattr(existing, 'job_changes'):
+                        existing.job_changes = int(data.get('JobChanges', 0))
                     existing.prediction = prediction
                     existing.default_probability = float(probability)
                     existing.risk_category = risk_category
                     db_record = existing
                 else:
                     print(f"Creating new record for {email}...")
-                    db_record = PredictionRecord(
-                        full_name=full_name,
-                        email=email,
-                        state=str(data.get('State', 'MH')),
-                        age=int(data.get('Age', 0)),
-                        income=float(data.get('Income', 0)),
-                        loan_amount=float(data.get('LoanAmount', 0)),
-                        credit_score=int(data.get('CreditScore', 0)),
-                        months_employed=int(data.get('MonthsEmployed', 0)),
-                        num_credit_lines=int(data.get('NumCreditLines', 0)),
-                        interest_rate=float(data.get('InterestRate', 0)),
-                        loan_term=int(data.get('LoanTerm', 0)),
-                        dti_ratio=float(data.get('DTIRatio', 0)),
-                        education=str(data.get('Education', '')),
-                        employment_type=str(data.get('EmploymentType', '')),
-                        marital_status=str(data.get('MaritalStatus', '')),
-                        has_mortgage=str(data.get('HasMortgage', '')),
-                        has_dependents=str(data.get('HasDependents', '')),
-                        loan_purpose=str(data.get('LoanPurpose', '')),
-                        has_cosigner=str(data.get('HasCoSigner', '')),
-                        has_existing_loan=str(data.get('HasExistingLoan', 'No')),
-                        existing_bank=str(data.get('ExistingBank', '')),
-                        existing_rate=float(data.get('ExistingRate', 0)),
-                        existing_purpose=str(data.get('ExistingPurpose', '')),
-                        job_changes=int(data.get('JobChanges', 0)),
-                        prediction=prediction,
-                        default_probability=float(probability),
-                        risk_category=risk_category
-                    )
+                    record_data = {
+                        'full_name': full_name,
+                        'email': email,
+                        'state': str(data.get('State', 'MH')),
+                        'age': int(data.get('Age', 0)),
+                        'income': float(data.get('Income', 0)),
+                        'loan_amount': float(data.get('LoanAmount', 0)),
+                        'credit_score': int(data.get('CreditScore', 0)),
+                        'months_employed': int(data.get('MonthsEmployed', 0)),
+                        'num_credit_lines': int(data.get('NumCreditLines', 0)),
+                        'interest_rate': float(data.get('InterestRate', 0)),
+                        'loan_term': int(data.get('LoanTerm', 0)),
+                        'dti_ratio': float(data.get('DTIRatio', 0)),
+                        'education': str(data.get('Education', '')),
+                        'employment_type': str(data.get('EmploymentType', '')),
+                        'marital_status': str(data.get('MaritalStatus', '')),
+                        'has_mortgage': str(data.get('HasMortgage', '')),
+                        'has_dependents': str(data.get('HasDependents', '')),
+                        'loan_purpose': str(data.get('LoanPurpose', '')),
+                        'has_cosigner': str(data.get('HasCoSigner', '')),
+                        'has_existing_loan': str(data.get('HasExistingLoan', 'No')),
+                        'existing_bank': str(data.get('ExistingBank', '')),
+                        'existing_rate': float(data.get('ExistingRate', 0)),
+                        'existing_purpose': str(data.get('ExistingPurpose', '')),
+                        'prediction': prediction,
+                        'default_probability': float(probability),
+                        'risk_category': risk_category
+                    }
+                    # Add job_changes only if the model supports it
+                    if 'job_changes' in PredictionRecord.__table__.columns:
+                        record_data['job_changes'] = int(data.get('JobChanges', 0))
+                    
+                    db_record = PredictionRecord(**record_data)
                     db.add(db_record)
                 
                 db.commit()
