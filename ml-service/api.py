@@ -308,24 +308,38 @@ def predict():
             }
         }
 
-        # Try saving to PostgreSQL database
+        # Always INSERT a new record for each submission — never update
         db = get_db()
         if db:
             try:
+                from sqlalchemy import text
                 full_name = data.get('FullName', 'Anonymous').strip()
                 email = data.get('Email', 'anonymous@example.com').strip()
-                print(f"\n--- DB DEBUG ---")
-                print(f"Incoming: Name='{full_name}', Email='{email}'")
-                
-                # Check ALL existing records for debugging
-                all_records = db.query(PredictionRecord).all()
-                print(f"Current Records in DB: {len(all_records)}")
-                for r in all_records:
-                    print(f"  - ID: {r.id}, Email: '{r.email}', Name: '{r.full_name}'")
+                job_changes = int(data.get('JobChanges', 0))
 
-            # Always create a new record instead of overwriting
-                print(f"Creating new record for {email}...")
-                record_data = {
+                print(f"\n--- DB INSERT ---")
+                print(f"Inserting new record: Name='{full_name}', Email='{email}'")
+
+                db.execute(text("""
+                    INSERT INTO predictions
+                        (full_name, email, state, created_at,
+                         age, income, loan_amount, credit_score,
+                         months_employed, num_credit_lines, interest_rate,
+                         loan_term, dti_ratio, education, employment_type,
+                         marital_status, has_mortgage, has_dependents,
+                         loan_purpose, has_cosigner, has_existing_loan,
+                         existing_bank, existing_rate, existing_purpose,
+                         job_changes, prediction, default_probability, risk_category)
+                    VALUES
+                        (:full_name, :email, :state, NOW(),
+                         :age, :income, :loan_amount, :credit_score,
+                         :months_employed, :num_credit_lines, :interest_rate,
+                         :loan_term, :dti_ratio, :education, :employment_type,
+                         :marital_status, :has_mortgage, :has_dependents,
+                         :loan_purpose, :has_cosigner, :has_existing_loan,
+                         :existing_bank, :existing_rate, :existing_purpose,
+                         :job_changes, :prediction, :default_probability, :risk_category)
+                """), {
                     'full_name': full_name,
                     'email': email,
                     'state': str(data.get('State', 'MH')),
@@ -349,20 +363,13 @@ def predict():
                     'existing_bank': str(data.get('ExistingBank', '')),
                     'existing_rate': float(data.get('ExistingRate', 0)),
                     'existing_purpose': str(data.get('ExistingPurpose', '')),
+                    'job_changes': job_changes,
                     'prediction': prediction,
                     'default_probability': float(probability),
-                    'risk_category': risk_category
-                }
-                # Add job_changes only if the model supports it
-                if 'job_changes' in PredictionRecord.__table__.columns:
-                    record_data['job_changes'] = int(data.get('JobChanges', 0))
-                    
-                db_record = PredictionRecord(**record_data)
-                db.add(db_record)
-                
+                    'risk_category': risk_category,
+                })
                 db.commit()
-                print(f"Record {db_record.id} saved/updated successfully.")
-                print(f"Commit successful. ----------------\n")
+                print(f"New record inserted successfully for {email}.\n")
             except Exception as db_e:
                 import traceback
                 print(f"[DB ERROR] Failed to save prediction: {db_e}")
