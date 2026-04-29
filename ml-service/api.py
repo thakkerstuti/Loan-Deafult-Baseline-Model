@@ -97,6 +97,22 @@ def prepare_features(data):
     for field in numeric_fields:
         df[field] = pd.to_numeric(df[field], errors='coerce')
 
+    invalid_numeric = [
+        field for field in numeric_fields
+        if pd.isna(df[field].iloc[0]) or not np.isfinite(df[field].iloc[0])
+    ]
+    if invalid_numeric:
+        raise ValueError(f"Invalid numeric values for: {', '.join(invalid_numeric)}")
+
+    if df['Income'].iloc[0] <= 0:
+        raise ValueError("Income must be greater than 0")
+    if df['LoanAmount'].iloc[0] <= 0:
+        raise ValueError("LoanAmount must be greater than 0")
+    if df['LoanTerm'].iloc[0] <= 0:
+        raise ValueError("LoanTerm must be greater than 0")
+    if df['DTIRatio'].iloc[0] < 0 or df['DTIRatio'].iloc[0] > 1:
+        raise ValueError("DTIRatio must be between 0 and 1")
+
     # Feature Engineering
     df['Loan_Income_Ratio'] = df['LoanAmount'] / df['Income']
     df['Estimated_EMI'] = df['LoanAmount'] / df['LoanTerm']
@@ -251,7 +267,10 @@ def predict():
             return jsonify({'error': f'Missing fields: {", ".join(missing)}'}), 400
 
         # Prepare features
-        features_df = prepare_features(data)
+        try:
+            features_df = prepare_features(data)
+        except ValueError as validation_error:
+            return jsonify({'error': str(validation_error)}), 400
         features_scaled = scaler.transform(features_df)
 
         # Predict

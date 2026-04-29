@@ -19,12 +19,12 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell active">
+    <>
       {user.type === 'bank' ? (
         <BankDashboard user={user} onLogout={() => setUser(null)} theme={theme} toggleTheme={toggleTheme} />
       ) : (
         <BorrowerPortal user={user} onLogout={() => setUser(null)} theme={theme} toggleTheme={toggleTheme} />
       )}
-    </div>
+    </>
   );
 }

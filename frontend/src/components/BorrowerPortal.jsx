@@ -109,7 +109,29 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
   };
 
   const handleSubmit = async () => {
-    if (!formData.loanAmt) { alert('Please enter a Loan Amount'); return; }
+    const requiredFields = [
+      ['age', 'Age'],
+      ['credit', 'Credit Score'],
+      ['income', 'Annual Income'],
+      ['loanAmt', 'Loan Amount'],
+      ['dti', 'DTI Ratio'],
+      ['lines', 'Credit Lines'],
+      ['rate', 'Expected Interest Rate'],
+      ['empl', 'Months Employed'],
+      ['jobChanges', 'Job Changes']
+    ];
+    const missing = requiredFields
+      .filter(([key]) => formData[key] === '' || formData[key] === null || Number.isNaN(Number(formData[key])))
+      .map(([, label]) => label);
+
+    if (missing.length) {
+      alert(`Please enter valid values for: ${missing.join(', ')}`);
+      return;
+    }
+
+    if (Number(formData.income) <= 0) { alert('Annual Income must be greater than 0'); return; }
+    if (Number(formData.loanAmt) <= 0) { alert('Loan Amount must be greater than 0'); return; }
+    if (Number(formData.dti) < 0 || Number(formData.dti) > 1) { alert('DTI Ratio must be between 0 and 1'); return; }
 
     const hasExtLoan = flags.extloan === 'Y';
     const extAmt = hasExtLoan ? formData.extLoanAmt : 0;
@@ -142,9 +164,9 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
       LoanPurpose: purposeMap[effectivePurpose] || "Other",
       HasCoSigner: flags.co === 'Y' ? "Yes" : "No",
       HasExistingLoan: flags.extloan === 'Y' ? "Yes" : "No",
-      ExistingBank: formData.bank === 'custom' ? formData.customBank : formData.bank,
+      ExistingBank: formData.extBank === 'custom' ? formData.extBankCustom : formData.extBank,
       ExistingRate: formData.extRate || 0,
-      ExistingPurpose: formData.extPurpose === 'custom' ? formData.customExtPurpose : formData.extPurpose,
+      ExistingPurpose: formData.extLoanType === 'custom' ? formData.extLoanTypeCustom : formData.extLoanType,
       FullName: `${user?.first} ${user?.last}`.trim() || "Anonymous",
       Email: user?.email,
       State: formData.state || 'MH',
