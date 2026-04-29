@@ -323,41 +323,7 @@ def predict():
                 for r in all_records:
                     print(f"  - ID: {r.id}, Email: '{r.email}', Name: '{r.full_name}'")
 
-                # Check if a record already exists for this email
-                existing = db.query(PredictionRecord).filter(PredictionRecord.email == email).first()
-                
-                if existing:
-                    print(f"Updating existing record for {email}...")
-                    existing.full_name = full_name
-                    existing.state = str(data.get('State', 'MH'))
-                    existing.age = int(data.get('Age', 0))
-                    existing.income = float(data.get('Income', 0))
-                    existing.loan_amount = float(data.get('LoanAmount', 0))
-                    existing.credit_score = int(data.get('CreditScore', 0))
-                    existing.months_employed = int(data.get('MonthsEmployed', 0))
-                    existing.num_credit_lines = int(data.get('NumCreditLines', 0))
-                    existing.interest_rate = float(data.get('InterestRate', 0))
-                    existing.loan_term = int(data.get('LoanTerm', 0))
-                    existing.dti_ratio = float(data.get('DTIRatio', 0))
-                    existing.education = str(data.get('Education', ''))
-                    existing.employment_type = str(data.get('EmploymentType', ''))
-                    existing.marital_status = str(data.get('MaritalStatus', ''))
-                    existing.has_mortgage = str(data.get('HasMortgage', ''))
-                    existing.has_dependents = str(data.get('HasDependents', ''))
-                    existing.loan_purpose = str(data.get('LoanPurpose', ''))
-                    existing.has_cosigner = str(data.get('HasCoSigner', ''))
-                    existing.has_existing_loan = str(data.get('HasExistingLoan', 'No'))
-                    existing.existing_bank = str(data.get('ExistingBank', ''))
-                    existing.existing_rate = float(data.get('ExistingRate', 0))
-                    existing.existing_purpose = str(data.get('ExistingPurpose', ''))
-                    # Set job_changes only if attribute exists
-                    if hasattr(existing, 'job_changes'):
-                        existing.job_changes = int(data.get('JobChanges', 0))
-                    existing.prediction = prediction
-                    existing.default_probability = float(probability)
-                    existing.risk_category = risk_category
-                    db_record = existing
-                else:
+                # Always create a new record instead of overwriting
                     print(f"Creating new record for {email}...")
                     record_data = {
                         'full_name': full_name,
