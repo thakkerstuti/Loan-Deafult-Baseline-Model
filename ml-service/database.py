@@ -9,8 +9,9 @@ from sqlalchemy.exc import OperationalError
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Replace with your actual PostgreSQL credentials
+# Get DATABASE_URL — Railway provides 'postgres://', SQLAlchemy needs 'postgresql://'
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:Stuti180207@127.0.0.1:5432/GroundZero')
+DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 Base = declarative_base()
 
@@ -66,51 +67,34 @@ class User(Base):
     role = Column(String, default='borrower') # 'bank' or 'borrower'
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# Initialize Engine and Session
+# Initialize Engine and Session — PostgreSQL ONLY
 engine = None
 SessionLocal = None
 DB_AVAILABLE = False
 
 try:
-    engine = create_engine(DATABASE_URL)
-    # Test connection and create tables
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,       # Test connection before using
+        pool_recycle=300,         # Recycle connections every 5 min
+        connect_args={}
+    )
     with engine.connect() as conn:
         logger.info("[OK] Successfully connected to PostgreSQL database.")
     
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    # Create tables if they don't exist
     Base.metadata.create_all(bind=engine)
     DB_AVAILABLE = True
 
 except OperationalError as e:
-    logger.error(f"[DB ERROR] Operational Error: {e}")
-    logger.warning("[WARNING] Could not connect to PostgreSQL. Using SQLite in-memory fallback.")
-    
-    # Fallback to SQLite persistent database
-    try:
-        engine = create_engine('sqlite:///./loan_guard_fallback.db', connect_args={'check_same_thread': False})
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        # Create tables
-        Base.metadata.create_all(bind=engine)
-        DB_AVAILABLE = True
-        logger.info("[OK] SQLite persistent database initialized.")
-    except Exception as sqlite_error:
-        logger.error(f"[DB ERROR] Failed to initialize SQLite: {sqlite_error}")
-        DB_AVAILABLE = False
+    logger.error(f"[DB ERROR] Cannot connect to PostgreSQL: {e}")
+    logger.error("[FATAL] PostgreSQL is required. No SQLite fallback.")
+    DB_AVAILABLE = False
+
 except Exception as e:
-    logger.error(f"[DB ERROR] Unexpected Error: {e}")
-    logger.warning("[WARNING] Using SQLite in-memory fallback.")
-    
-    # Fallback to SQLite persistent database
-    try:
-        engine = create_engine('sqlite:///./loan_guard_fallback.db', connect_args={'check_same_thread': False})
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        Base.metadata.create_all(bind=engine)
-        DB_AVAILABLE = True
-        logger.info("[OK] SQLite persistent database initialized.")
-    except Exception as sqlite_error:
-        logger.error(f"[DB ERROR] Failed to initialize SQLite: {sqlite_error}")
-        DB_AVAILABLE = False
+    logger.error(f"[DB ERROR] Unexpected error connecting to PostgreSQL: {e}")
+    logger.error("[FATAL] PostgreSQL is required. No SQLite fallback.")
+    DB_AVAILABLE = False
 
 def get_db():
     """Return an open database session, or None if DB is unavailable."""
