@@ -51,9 +51,13 @@ export function calcEMI(p, r, t) {
 export function buildSched(p, r, t) {
   const emi = calcEMI(p, r, t);
   const mr = parseFloat(r) / 12 / 100;
+  
+  // Calculate strict totals based on mathematical EMI
+  const totalPay = emi * t;
+  const totalInt = Math.max(0, totalPay - p);
+  
   let bal = p;
   const rows = [];
-  let tP = 0, tI = 0;
   
   for (let i = 1; i <= t; i++) {
     const int = bal * mr;
@@ -65,15 +69,13 @@ export function buildSched(p, r, t) {
     }
     
     bal = Math.max(0, bal - prn);
-    tP += prn;
-    tI += int;
     rows.push({ m: i, emi: prn + int, p: prn, i: int, bal });
   }
   
-  return { rows, emi, tP, tI, tPay: tP + tI };
+  return { rows, emi, tP: p, tI: totalInt, tPay: totalPay };
 }
 
-export const fmt = (n) => (+n).toLocaleString('en-IN');
+export const fmt = (n) => (+n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const fmtK = (n) => {
   if (n >= 100000) return '₹' + (n / 100000).toFixed(1) + 'L';
   if (n >= 1000) return '₹' + (n / 1000).toFixed(0) + 'K';

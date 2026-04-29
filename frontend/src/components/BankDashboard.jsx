@@ -12,9 +12,9 @@ export default function BankDashboard({ user, onLogout, theme, toggleTheme }) {
 
   const [formData, setFormData] = useState({
     fullName: '', age: '', credit: '', income: '', loanAmt: '', dti: '', lines: '',
-    purpose: 'other', term: '', rate: '', empType: '', empl: '', jobChanges: '',
-    edu: '', marital: '', state: '', customPurpose: '', customTerm: '',
-    bank: '', customBank: '', extRate: '', extPurpose: 'home', customExtPurpose: ''
+    purpose: 'other', term: '24', rate: '', empType: 'full', empl: '', jobChanges: '',
+    edu: 'bach', marital: 'single', state: 'MH', customPurpose: '', customTerm: '',
+    bank: 'SBI', customBank: '', extRate: '', extPurpose: 'home', customExtPurpose: ''
   });
   const [flags, setFlags] = useState({ mort: 'N', dep: 'N', co: 'N', extloan: 'N' });
   const [result, setResult] = useState(null);
@@ -112,9 +112,10 @@ export default function BankDashboard({ user, onLogout, theme, toggleTheme }) {
           type: f.impact > 0 ? 'pos' : 'neg'
         }));
 
-        const emi = apiData.input_summary.estimated_emi;
-        const totalRepay = emi * effectiveTerm;
-        const totalInt = totalRepay - formData.loanAmt;
+        const sched = buildSched(formData.loanAmt, formData.rate, effectiveTerm);
+        const emi = sched.emi;
+        const totalRepay = sched.tPay;
+        const totalInt = sched.tI;
 
         setResult({
           pct: Math.round(apiData.default_probability * 100),
@@ -125,7 +126,7 @@ export default function BankDashboard({ user, onLogout, theme, toggleTheme }) {
           pPct: totalRepay > 0 ? (formData.loanAmt / totalRepay) * 100 : 0,
           iPct: totalRepay > 0 ? (totalInt / totalRepay) * 100 : 0,
           features: apiFeatures,
-          sched: buildSched(formData.loanAmt, formData.rate, effectiveTerm)
+          sched: sched
         });
         return; // Exit here as we've handled everything with real API data
       }

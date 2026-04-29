@@ -20,6 +20,11 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
   const [expandSched, setExpandSched] = useState(false);
   const [myApps, setMyApps] = useState([]);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  
+  // States to preserve draft form while viewing a past application
+  const [draftData, setDraftData] = useState(null);
+  const [draftFlags, setDraftFlags] = useState(null);
+  const [draftResult, setDraftResult] = useState(null);
 
   const eduMap = { hs: "High School", bach: "Bachelor's", mast: "Master's", phd: "PhD" };
   const empMap = { full: "Full-time", part: "Part-time", self: "Self-employed", unemployed: "Unemployed" };
@@ -51,6 +56,13 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
   }, [user.email]);
 
   const handleViewApp = (app) => {
+    // Save current unsubmitted work before overwriting with historical data
+    if (!isReadOnly) {
+      setDraftData(formData);
+      setDraftFlags(flags);
+      setDraftResult(result);
+    }
+
     const stdTerms = [12, 24, 36, 48, 60];
     const stdPurposes = ['home', 'auto', 'education', 'business', 'medical', 'personal', 'other'];
     const isCustomTerm = !stdTerms.includes(parseInt(app.term));
@@ -106,6 +118,9 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
       jobChanges: ''
     });
     setFlags({ mort: 'N', dep: 'N', co: 'N', extloan: 'N' });
+    setDraftData(null);
+    setDraftFlags(null);
+    setDraftResult(null);
   };
 
   const handleSubmit = async () => {
@@ -234,7 +249,19 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
         user={user} 
         activePage={page} 
         setPage={(p) => {
-          if (p === 'bpg-apply') resetForm();
+          if (p === 'bpg-apply') {
+            if (isReadOnly) {
+              if (draftData) {
+                setFormData(draftData);
+                setFlags(draftFlags);
+                setResult(draftResult);
+                setIsReadOnly(false);
+              } else {
+                resetForm();
+              }
+            }
+            // If already editing (!isReadOnly), do not reset form
+          }
           setPage(p);
         }} 
         onLogout={onLogout} 
@@ -265,7 +292,7 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
                   )}
                 </p>
                 {isReadOnly && (
-                  <button className="bp-btn" onClick={resetForm} style={{ padding: '8px 20px', width: 'auto', fontSize: '13px' }}>
+                  <button className="bp-btn" onClick={() => { resetForm(); setPage('bpg-apply'); }} style={{ padding: '8px 20px', width: 'auto', fontSize: '13px' }}>
                     + Start New Application
                   </button>
                 )}
@@ -578,7 +605,7 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
                       <div className="card glass">
                         <div className="ch"><div className="ct"><div className="pip pip-sky" />Monthly Installment</div></div>
                         <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                          <div style={{ fontFamily: "'Fraunces',serif", fontSize: '42px', fontWeight: 700, color: 'var(--gold)' }}>₹{fmt(Math.round(result.sched.emi))}</div>
+                          <div style={{ fontFamily: "'Fraunces',serif", fontSize: '42px', fontWeight: 700, color: 'var(--gold)' }}>₹{fmt(result.sched.emi)}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '6px' }}>Monthly EMI for {effectiveTerm} months</div>
                         </div>
                       </div>
@@ -592,11 +619,11 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
                             <span style={{ color: 'var(--text2)' }}>Total Interest</span>
-                            <span style={{ fontWeight: 600, color: 'var(--rose)' }}>₹{fmt(Math.round(result.sched.tI))}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--rose)' }}>₹{fmt(result.sched.tI)}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
                             <span style={{ color: 'var(--text)' }}>Total Payable</span>
-                            <span style={{ color: 'var(--teal)' }}>₹{fmt(Math.round(result.sched.tPay))}</span>
+                            <span style={{ color: 'var(--teal)' }}>₹{fmt(result.sched.tPay)}</span>
                           </div>
                         </div>
                       </div>
@@ -644,7 +671,7 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
                     <div className="card">
                       <div className="ch"><div className="ct"><div className="pip pip-sky" />Monthly EMI</div></div>
                       <div style={{textAlign:'center',padding:'12px 0'}}>
-                        <div style={{fontFamily:"'Fraunces',serif",fontSize:'48px',fontWeight:700,color:'var(--gold)'}}>₹{fmt(Math.round(result.sched.emi))}</div>
+                        <div style={{fontFamily:"'Fraunces',serif",fontSize:'48px',fontWeight:700,color:'var(--gold)'}}>₹{fmt(result.sched.emi)}</div>
                         <div style={{fontSize:'11px',color:'var(--text3)',marginTop:'6px'}}>per month for {effectiveTerm} months</div>
                         
                         {(() => {
@@ -658,7 +685,7 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
                           );
                         })()}
 
-                        {result.hasExtLoan && result.extEmi > 0 && <div style={{marginTop:'8px',fontSize:'11px',padding:'6px 10px',borderRadius:'7px',background:'rgba(232,84,117,0.08)',color:'var(--rose)'}}>+ ₹{fmt(result.extEmi)}/mo existing EMI → Total: ₹{fmt(Math.round(result.sched.emi+result.extEmi))}/mo</div>}
+                        {result.hasExtLoan && result.extEmi > 0 && <div style={{marginTop:'8px',fontSize:'11px',padding:'6px 10px',borderRadius:'7px',background:'rgba(232,84,117,0.08)',color:'var(--rose)'}}>+ ₹{fmt(result.extEmi)}/mo existing EMI → Total: ₹{fmt(result.sched.emi+result.extEmi)}/mo</div>}
                       </div>
                     </div>
                   </div>
@@ -673,11 +700,11 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
                         <div style={{fontSize:'10px',color:'var(--text3)',textTransform:'uppercase',letterSpacing:'1px',marginTop:'4px'}}>Principal</div>
                       </div>
                       <div style={{background:'var(--bg3)',padding:'16px',borderRadius:'12px',textAlign:'center'}}>
-                        <div style={{fontFamily:"'Fraunces',serif",fontSize:'24px',fontWeight:700,color:'var(--rose)'}}>₹{fmt(Math.round(result.sched.tI))}</div>
+                        <div style={{fontFamily:"'Fraunces',serif",fontSize:'24px',fontWeight:700,color:'var(--rose)'}}>₹{fmt(result.sched.tI)}</div>
                         <div style={{fontSize:'10px',color:'var(--text3)',textTransform:'uppercase',letterSpacing:'1px',marginTop:'4px'}}>Total Interest</div>
                       </div>
                       <div style={{background:'var(--bg3)',padding:'16px',borderRadius:'12px',textAlign:'center'}}>
-                        <div style={{fontFamily:"'Fraunces',serif",fontSize:'24px',fontWeight:700,color:'var(--gold)'}}>₹{fmt(Math.round(result.sched.tPay))}</div>
+                        <div style={{fontFamily:"'Fraunces',serif",fontSize:'24px',fontWeight:700,color:'var(--gold)'}}>₹{fmt(result.sched.tPay)}</div>
                         <div style={{fontSize:'10px',color:'var(--text3)',textTransform:'uppercase',letterSpacing:'1px',marginTop:'4px'}}>Total Repayment</div>
                       </div>
                     </div>
@@ -720,10 +747,10 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
                           {result.sched.rows.slice(0, expandSched ? undefined : 12).map((r, i) => (
                             <tr key={i} style={{borderTop:'1px solid var(--border)'}}>
                               <td style={{padding:'12px 0',color:'var(--text2)',fontSize:'12px'}}>Mo {r.m}</td>
-                              <td style={{padding:'12px 0',textAlign:'right',fontWeight:600}}>₹{fmt(Math.round(r.emi))}</td>
-                              <td style={{padding:'12px 0',textAlign:'right',color:'var(--text2)'}}>₹{fmt(Math.round(r.p))}</td>
-                              <td style={{padding:'12px 0',textAlign:'right',color:'var(--rose)'}}>₹{fmt(Math.round(r.i))}</td>
-                              <td style={{padding:'12px 0',textAlign:'right',color:'var(--gold)'}}>₹{fmt(Math.round(r.bal))}</td>
+                              <td style={{padding:'12px 0',textAlign:'right',fontWeight:600}}>₹{fmt(r.emi)}</td>
+                              <td style={{padding:'12px 0',textAlign:'right',color:'var(--text2)'}}>₹{fmt(r.p)}</td>
+                              <td style={{padding:'12px 0',textAlign:'right',color:'var(--rose)'}}>₹{fmt(r.i)}</td>
+                              <td style={{padding:'12px 0',textAlign:'right',color:'var(--gold)'}}>₹{fmt(r.bal)}</td>
                             </tr>
                           ))}
                           {!expandSched && result.sched.rows.length > 12 && (
@@ -816,7 +843,7 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
                               <span style={{background:'rgba(56,201,176,0.1)',color:'var(--teal)',padding:'2px 8px',borderRadius:'4px',fontSize:'10px',fontWeight:700}}>✅ BUY</span>
                             </div>
                             <div style={{fontFamily:"'Fraunces',serif",fontSize:'22px',fontWeight:700,marginBottom:'4px'}}>
-                              {liveData.loading ? '...' : liveData.btc ? `₹${fmt(Math.round(liveData.btc.inr))}` : '₹55,42,100'}
+                              {liveData.loading ? '...' : liveData.btc ? `₹${fmt(liveData.btc.inr)}` : '₹55,42,100'}
                             </div>
                             <div style={{fontSize:'12px',fontWeight:600,color:liveData.btc && liveData.btc.inr_24h_change < 0 ? 'var(--rose)' : 'var(--teal)'}}>
                               {liveData.btc && liveData.btc.inr_24h_change < 0 ? '▼' : '▲'} {liveData.btc ? Math.abs(liveData.btc.inr_24h_change).toFixed(2) : '1.2'}% today
@@ -1008,15 +1035,15 @@ export default function BorrowerPortal({ user, onLogout, theme, toggleTheme }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {myApps.map((a, i) => (
+                      {(Array.isArray(myApps) ? myApps : []).map((a, i) => (
                         <tr key={i} style={{borderBottom:'1px solid var(--border)'}}>
                           <td style={{padding:'12px'}}>{new Date(a.created_at).toLocaleDateString()}</td>
                           <td style={{padding:'12px',fontWeight:700}}>₹{fmt(a.loan_amount)}</td>
                           <td style={{padding:'12px'}}>{a.loan_purpose}</td>
                           <td style={{padding:'12px'}}>{a.term} mo</td>
                           <td style={{padding:'12px'}}>
-                            <span className={`bpill ${a.risk_category.toLowerCase()==='low'?'bp-teal':a.risk_category.toLowerCase()==='medium'?'bp-gold':'bp-rose'}`}>
-                              {a.risk_category} Risk
+                            <span className={`bpill ${a.risk_category?.toLowerCase()==='low'?'bp-teal':a.risk_category?.toLowerCase()==='medium'?'bp-gold':'bp-rose'}`}>
+                              {a.risk_category || 'Unknown'} Risk
                             </span>
                           </td>
                           <td style={{padding:'12px'}}>
