@@ -326,9 +326,11 @@ def predict():
         if db:
             try:
                 from sqlalchemy import text
+                from datetime import datetime
                 full_name = data.get('FullName', 'Anonymous').strip()
                 email = data.get('Email', 'anonymous@example.com').strip()
                 job_changes = int(data.get('JobChanges', 0))
+                created_at = datetime.utcnow()
 
                 print(f"\n--- DB INSERT ---")
                 print(f"Inserting new record: Name='{full_name}', Email='{email}'")
@@ -344,7 +346,7 @@ def predict():
                          existing_bank, existing_rate, existing_purpose,
                          job_changes, prediction, default_probability, risk_category)
                     VALUES
-                        (:full_name, :email, :state, NOW(),
+                        (:full_name, :email, :state, :created_at,
                          :age, :income, :loan_amount, :credit_score,
                          :months_employed, :num_credit_lines, :interest_rate,
                          :loan_term, :dti_ratio, :education, :employment_type,
@@ -356,6 +358,7 @@ def predict():
                     'full_name': full_name,
                     'email': email,
                     'state': str(data.get('State', 'MH')),
+                    'created_at': created_at,
                     'age': int(data.get('Age', 0)),
                     'income': float(data.get('Income', 0)),
                     'loan_amount': float(data.get('LoanAmount', 0)),
