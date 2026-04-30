@@ -336,71 +336,50 @@ def predict():
         db = get_db()
         if db:
             try:
-                from sqlalchemy import text
                 from datetime import datetime
                 full_name = data.get('FullName', 'Anonymous').strip()
                 email = data.get('Email', 'anonymous@example.com').strip()
                 job_changes = int(data.get('JobChanges', 0))
                 created_at = datetime.utcnow()
 
-                print(f"\n--- DB INSERT ---")
-                print(f"Inserting new record: Name='{full_name}', Email='{email}'")
+                logger.info(f"Inserting new record: Name='{full_name}', Email='{email}'")
 
-                db.execute(text("""
-                    INSERT INTO predictions
-                        (full_name, email, state, created_at,
-                         age, income, loan_amount, credit_score,
-                         months_employed, num_credit_lines, interest_rate,
-                         loan_term, dti_ratio, education, employment_type,
-                         marital_status, has_mortgage, has_dependents,
-                         loan_purpose, has_cosigner, has_existing_loan,
-                         existing_bank, existing_rate, existing_purpose,
-                         job_changes, prediction, default_probability, risk_category)
-                    VALUES
-                        (:full_name, :email, :state, :created_at,
-                         :age, :income, :loan_amount, :credit_score,
-                         :months_employed, :num_credit_lines, :interest_rate,
-                         :loan_term, :dti_ratio, :education, :employment_type,
-                         :marital_status, :has_mortgage, :has_dependents,
-                         :loan_purpose, :has_cosigner, :has_existing_loan,
-                         :existing_bank, :existing_rate, :existing_purpose,
-                         :job_changes, :prediction, :default_probability, :risk_category)
-                """), {
-                    'full_name': full_name,
-                    'email': email,
-                    'state': str(data.get('State', 'MH')),
-                    'created_at': created_at,
-                    'age': int(data.get('Age', 0)),
-                    'income': float(data.get('Income', 0)),
-                    'loan_amount': float(data.get('LoanAmount', 0)),
-                    'credit_score': int(data.get('CreditScore', 0)),
-                    'months_employed': int(data.get('MonthsEmployed', 0)),
-                    'num_credit_lines': int(data.get('NumCreditLines', 0)),
-                    'interest_rate': float(data.get('InterestRate', 0)),
-                    'loan_term': int(data.get('LoanTerm', 0)),
-                    'dti_ratio': float(data.get('DTIRatio', 0)),
-                    'education': str(data.get('Education', '')),
-                    'employment_type': str(data.get('EmploymentType', '')),
-                    'marital_status': str(data.get('MaritalStatus', '')),
-                    'has_mortgage': str(data.get('HasMortgage', '')),
-                    'has_dependents': str(data.get('HasDependents', '')),
-                    'loan_purpose': str(data.get('LoanPurpose', '')),
-                    'has_cosigner': str(data.get('HasCoSigner', '')),
-                    'has_existing_loan': str(data.get('HasExistingLoan', 'No')),
-                    'existing_bank': str(data.get('ExistingBank', '')),
-                    'existing_rate': float(data.get('ExistingRate', 0)),
-                    'existing_purpose': str(data.get('ExistingPurpose', '')),
-                    'job_changes': job_changes,
-                    'prediction': prediction,
-                    'default_probability': float(probability),
-                    'risk_category': risk_category,
-                })
+                # Use SQLAlchemy ORM instead of raw SQL
+                new_record = PredictionRecord(
+                    full_name=full_name,
+                    email=email,
+                    state=str(data.get('State', 'MH')),
+                    created_at=created_at,
+                    age=int(data.get('Age', 0)),
+                    income=float(data.get('Income', 0)),
+                    loan_amount=float(data.get('LoanAmount', 0)),
+                    credit_score=int(data.get('CreditScore', 0)),
+                    months_employed=int(data.get('MonthsEmployed', 0)),
+                    num_credit_lines=int(data.get('NumCreditLines', 0)),
+                    interest_rate=float(data.get('InterestRate', 0)),
+                    loan_term=int(data.get('LoanTerm', 0)),
+                    dti_ratio=float(data.get('DTIRatio', 0)),
+                    education=str(data.get('Education', '')),
+                    employment_type=str(data.get('EmploymentType', '')),
+                    marital_status=str(data.get('MaritalStatus', '')),
+                    has_mortgage=str(data.get('HasMortgage', '')),
+                    has_dependents=str(data.get('HasDependents', '')),
+                    loan_purpose=str(data.get('LoanPurpose', '')),
+                    has_cosigner=str(data.get('HasCoSigner', '')),
+                    has_existing_loan=str(data.get('HasExistingLoan', 'No')),
+                    existing_bank=str(data.get('ExistingBank', '')),
+                    existing_rate=float(data.get('ExistingRate', 0)),
+                    existing_purpose=str(data.get('ExistingPurpose', '')),
+                    job_changes=job_changes,
+                    prediction=prediction,
+                    default_probability=float(probability),
+                    risk_category=risk_category,
+                )
+                db.add(new_record)
                 db.commit()
-                print(f"New record inserted successfully for {email}.\n")
+                logger.info(f"New record inserted successfully for {email}")
             except Exception as db_e:
-                import traceback
-                print(f"[DB ERROR] Failed to save prediction: {db_e}")
-                traceback.print_exc()
+                logger.error(f"Failed to save prediction: {db_e}", exc_info=True)
                 db.rollback()
             finally:
                 db.close()
