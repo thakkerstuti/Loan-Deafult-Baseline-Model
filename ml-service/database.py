@@ -1,7 +1,7 @@
 import os
 import logging
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, text, inspect
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.exc import OperationalError
 
@@ -87,6 +87,28 @@ try:
     
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
+    
+    # Run migrations to add missing columns
+    def migrate_add_missing_columns():
+        """Add any missing columns to existing tables."""
+        try:
+            inspector = inspect(engine)
+            
+            # Check if job_changes column exists in predictions table
+            columns = [col['name'] for col in inspector.get_columns('predictions')]
+            
+            with engine.connect() as conn:
+                if 'job_changes' not in columns:
+                    logger.info("Adding missing column 'job_changes' to predictions table...")
+                    conn.execute(text("ALTER TABLE predictions ADD COLUMN job_changes INTEGER DEFAULT 0"))
+                    conn.commit()
+                    logger.info("[OK] Column 'job_changes' added successfully.")
+                else:
+                    logger.info("[OK] Column 'job_changes' already exists.")
+        except Exception as e:
+            logger.warning(f"Migration check failed (may already exist): {e}")
+    
+    migrate_add_missing_columns()
     DB_AVAILABLE = True
 
 except OperationalError as e:

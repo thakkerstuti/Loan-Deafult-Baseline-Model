@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 import logging
 
-from database import get_db, PredictionRecord, User, Base, engine, DB_AVAILABLE
+from database import get_db, PredictionRecord, User
 
 logger = logging.getLogger(__name__)
 
@@ -56,14 +56,6 @@ CORS(app, resources={
         "supports_credentials": True
     }
 })
-
-# --- Auto-Initialize Database Tables ---
-if DB_AVAILABLE and engine:
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("[OK] Database tables initialized successfully.")
-    except Exception as e:
-        logger.error(f"[ERROR] Failed to initialize database tables: {e}")
 
 # --- Load Model Artifacts ---
 MODEL_DIR = os.path.join(os.path.dirname(__file__), 'model_artifacts')
