@@ -10,7 +10,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Get DATABASE_URL — Railway provides 'postgres://', SQLAlchemy needs 'postgresql://'
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:Stuti180207@127.0.0.1:5432/GroundZero')
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    logger.error("[FATAL] DATABASE_URL environment variable is not set. Please configure Railway PostgreSQL.")
+    raise RuntimeError("DATABASE_URL environment variable is required")
 DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 
 Base = declarative_base()
